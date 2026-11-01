@@ -8,16 +8,14 @@ import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
-import android.text.style.StyleSpan;
-import android.text.style.TypefaceSpan;
-import android.graphics.Typeface;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.progressindicator.LinearProgressIndicator;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -26,7 +24,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvStatus, tvResults;
-    private LinearProgressIndicator progressBar;
+    private ProgressBar progressBar;
     private String[] keywords = {"auth", "key", "license", "hwid", "verify", "invalid", "t.me", "api.", "expire", "login", "void", "token", "panel"};
     private List<String> urlsFound = new ArrayList<>();
 
@@ -68,6 +66,11 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 InputStream inputStream = getContentResolver().openInputStream(uri);
+                if (inputStream == null) {
+                    runOnUiThread(() -> Toast.makeText(this, "Dosya acilamadi!", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+                
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 int nRead;
                 byte[] data = new byte[16384];
@@ -86,8 +89,10 @@ public class MainActivity extends AppCompatActivity {
                 String text = new String(fileBytes, "ISO-8859-1");
                 
                 // LINK ARAMA
-                sb.append("[+] TESPIT EDILEN LINKLER:\n");
-                applyColor(sb, "[+] TESPIT EDILEN LINKLER:\n", Color.parseColor("#FFCC00"));
+                String title1 = "[+] TESPIT EDILEN LINKLER:\n";
+                int start1 = sb.length();
+                sb.append(title1);
+                sb.setSpan(new ForegroundColorSpan(Color.parseColor("#FFCC00")), start1, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 
                 int index = 0;
                 while ((index = text.toLowerCase().indexOf("http", index)) != -1) {
@@ -100,16 +105,19 @@ public class MainActivity extends AppCompatActivity {
                         if (!urlsFound.contains(found)) {
                             urlsFound.add(found);
                             String urlStr = " -> " + found + "\n";
+                            int startUrl = sb.length();
                             sb.append(urlStr);
-                            applyColor(sb, urlStr, Color.parseColor("#00FFCC")); // Neon Mavi
+                            sb.setSpan(new ForegroundColorSpan(Color.parseColor("#00FFCC")), startUrl, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         }
                     }
                     index += 4;
                 }
 
                 // KELİME ARAMA
-                sb.append("\n[+] SIFRE / GIZLI ANAHTARLAR:\n");
-                applyColor(sb, "\n[+] SIFRE / GIZLI ANAHTARLAR:\n", Color.parseColor("#FFCC00"));
+                String title2 = "\n[+] SIFRE / GIZLI ANAHTARLAR:\n";
+                int start2 = sb.length();
+                sb.append(title2);
+                sb.setSpan(new ForegroundColorSpan(Color.parseColor("#FFCC00")), start2, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
                 for (String kw : keywords) {
                     int kwIndex = 0;
@@ -118,10 +126,12 @@ public class MainActivity extends AppCompatActivity {
                         int end = Math.min(text.length(), kwIndex + 35);
                         String found = text.substring(start, end).replaceAll("[^\\x20-\\x7E]", ".");
                         String lineStr = " -> [" + kw.toUpperCase() + "]: " + found + "\n";
+                        int startLine = sb.length();
                         sb.append(lineStr);
-                        applyColor(sb, lineStr, Color.parseColor("#FF0055")); // Neon Kırmızı
+                        sb.setSpan(new ForegroundColorSpan(Color.parseColor("#FF0055")), startLine, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        
                         kwIndex += kw.length();
-                        if (sb.length() > 10000) break;
+                        if (sb.length() > 15000) break;
                     }
                 }
 
@@ -138,14 +148,6 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
-    }
-
-    private void applyColor(SpannableStringBuilder sb, String text, int color) {
-        int start = sb.length() - text.length();
-        sb.setSpan(new ForegroundColorSpan(color), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        if (text.contains("HTTP") || text.contains("->")) {
-            sb.setSpan(new TypefaceSpan("monospace"), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
     }
 
     private boolean isPrintable(char c) {
