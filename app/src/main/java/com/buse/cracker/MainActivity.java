@@ -13,6 +13,8 @@ import android.provider.OpenableColumns;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
+import android.graphics.Typeface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -23,6 +25,8 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,11 +34,12 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private Button btnSelect;
     
-    // Analiz edilecek gizli anahtar kelimeler
-    private final String[] KEYWORDS = {"auth", "key", "license", "hwid", "verify", "invalid", "t.me", "api.", "expire", "login", "void", "token", "panel", "http", "https"};
-    private static final int MAX_RESULTS = 200; // Ekranın donmasını engellemek için limit
-    private static final int PICK_FILE_REQUEST = 100;
+    // Regex Kalıpları (Sadece gerçekçi verileri yakalar)
+    private static final Pattern URL_PATTERN = Pattern.compile("(https?://[a-zA-Z0-9./?=_%:-]+)");
+    private static final Pattern KEY_PATTERN = Pattern.compile("(?i)(auth|key|license|hwid|verify|invalid|t\\.me|api\\.|expire|login|void|token|panel)");
     
+    private static final int MAX_RESULTS = 150;
+    private static final int PICK_FILE_REQUEST = 100;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
@@ -48,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
         btnSelect = findViewById(R.id.btn_select_file);
 
         btnSelect.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
             startActivityForResult(intent, PICK_FILE_REQUEST);
         });
@@ -88,65 +94,64 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ignored) {}
 
             final String fName = fileName;
-            mainHandler.post(() -> tvStatus.setText("> Analiz Ediliyor: " + fName));
+            mainHandler.post(() -> tvStatus.setText("> Hedef Kilitlendi: " + fName));
 
             SpannableStringBuilder finalResults = new SpannableStringBuilder();
             Set<String> uniqueFound = new HashSet<>();
             int totalFound = 0;
 
-            appendColoredText(finalResults, "================================\n", Color.parseColor("#00FFCC"));
-            appendColoredText(finalResults, "      BUSE CRACKER RAPORU       \n", Color.parseColor("#00FFCC"));
-            appendColoredText(finalResults, "================================\n\n", Color.parseColor("#00FFCC"));
+            appendColoredText(finalResults, "================================\n", Color.parseColor("#00FFCC"), true);
+            appendColoredText(finalResults, "      BUSE CRACKER ANALIZ        \n", Color.parseColor("#00FFCC"), true);
+            appendColoredText(finalResults, "================================\n\n", Color.parseColor("#00FFCC"), true);
 
             try (InputStream is = getContentResolver().openInputStream(uri);
                  BufferedInputStream bis = new BufferedInputStream(is)) {
 
                 if (bis == null) throw new Exception("Dosya okunamadi!");
 
-                byte[] buffer = new byte[1024 * 512]; // 512KB parçalar (Hafızayı yormaz)
+                byte[] buffer = new byte[1024 * 128]; // 128KB bloklar
                 int bytesRead;
                 long totalBytesRead = 0;
                 String leftover = "";
-                int overlapSize = 100;
 
                 while ((bytesRead = bis.read(buffer)) != -1) {
                     totalBytesRead += bytesRead;
-                    
-                    // Parçayı stringe çevir ve önceki parçanın sonuyla birleştir (kaçan kelime olmasın diye)
                     String chunk = leftover + new String(buffer, 0, bytesRead, "ISO-8859-1");
-                    String lowerChunk = chunk.toLowerCase();
                     
-                    for (String kw : KEYWORDS) {
-                        int index = 0;
-                        while ((index = lowerChunk.indexOf(kw, index)) != -1) {
-                            int start = Math.max(0, index - 20);
-                            int end = Math.min(chunk.length(), index + 70);
-                            String foundStr = chunk.substring(start, end).replaceAll("[^\\x20-\\x7E]", ".");
-                            
-                            if (!uniqueFound.contains(foundStr) && foundStr.length() > 10) {
-                                uniqueFound.add(foundStr);
-                                totalFound++;
-                                
-                                if (totalFound <= MAX_RESULTS) {
-                                    String displayStr = "[" + kw.toUpperCase() + "] ..." + foundStr + "...\n";
-                                    appendColoredText(finalResults, displayStr, Color.parseColor("#FF0055"));
-                                }
-                            }
-                            index += kw.length();
+                    // URL ARAMA
+                    Matcher urlMatcher = URL_PATTERN.matcher(chunk);
+                    while (urlMatcher.find()) {
+                        String url = urlMatcher.group(1);
+                        if (!uniqueFound.contains(url) && totalFound < MAX_RESULTS) {
+                            uniqueFound.add(url);
+                            totalFound++;
+                            appendColoredText(finalResults, "[LINK] " + url + "\n", Color.parseColor("#00FFCC"), false);
                         }
                     }
 
-                    if (chunk.length() > overlapSize) leftover = chunk.substring(chunk.length() - overlapSize);
+                    // ANAHTAR KELİME ARAMA
+                    Matcher keyMatcher = KEY_PATTERN.matcher(chunk);
+                    while (keyMatcher.find()) {
+                        int start = Math.max(0, keyMatcher.start() - 15);
+                        int end = Math.min(chunk.length(), keyMatcher.end() + 25);
+                        String context = chunk.substring(start, end).replaceAll("[^\\x20-\\x7E]", ".");
+                        if (!uniqueFound.contains(context) && totalFound < MAX_RESULTS) {
+                            uniqueFound.add(context);
+                            totalFound++;
+                            appendColoredText(finalResults, "[KEY ] ..." + context + "...\n", Color.parseColor("#FF0055"), false);
+                        }
+                    }
+
+                    if (chunk.length() > 100) leftover = chunk.substring(chunk.length() - 100);
                     else leftover = chunk;
 
                     if (fileSize > 0) {
                         int progress = (int) ((totalBytesRead * 100) / fileSize);
                         final int fProgress = progress;
-                        final String fSizeStr = formatSize(totalBytesRead) + " / " + formatSize(fileSize);
                         mainHandler.post(() -> {
                             progressBar.setIndeterminate(false);
                             progressBar.setProgress(fProgress);
-                            tvStatus.setText("> Taraniyor: %" + fProgress + " (" + fSizeStr + ")");
+                            tvStatus.setText("> Taraniyor: %" + fProgress + " (" + formatSize(totalBytesRead) + ")");
                         });
                     }
 
@@ -154,13 +159,13 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (totalFound >= MAX_RESULTS) {
-                    appendColoredText(finalResults, "\n[!] Limit asildi, diger sonuclar gizlendi.\n", Color.parseColor("#FFCC00"));
+                    appendColoredText(finalResults, "\n[!] Limit asildi, diger sonuclar gizlendi.\n", Color.parseColor("#FFCC00"), true);
                 } else if (totalFound == 0) {
-                    appendColoredText(finalResults, "Hicbir gizli anahtar bulunamadi.\n", Color.parseColor("#888888"));
+                    appendColoredText(finalResults, "Hicbir gizli anahtar bulunamadi.\n", Color.parseColor("#888888"), true);
                 }
 
                 mainHandler.post(() -> {
-                    tvStatus.setText("> Tamamlandi! (" + totalFound + " sonuc)");
+                    tvStatus.setText("> Islem Tamamlandi! (" + totalFound + " bulgu)");
                     tvResults.setText(finalResults);
                     progressBar.setVisibility(View.INVISIBLE);
                     btnSelect.setEnabled(true);
@@ -178,10 +183,13 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void appendColoredText(SpannableStringBuilder sb, String text, int color) {
+    private void appendColoredText(SpannableStringBuilder sb, String text, int color, boolean bold) {
         int start = sb.length();
         sb.append(text);
         sb.setSpan(new ForegroundColorSpan(color), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (bold) {
+            sb.setSpan(new StyleSpan(Typeface.BOLD), start, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
     }
 
     private String formatSize(long size) {

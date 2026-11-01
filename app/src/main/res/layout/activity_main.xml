@@ -3,68 +3,76 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#06080A"
+    android:background="#050505"
     android:padding="16dp">
 
+    <!-- Başlık -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="BUSE CRACKER"
+        android:text="BUSE CRACKER PRO"
         android:textColor="#00FFCC"
-        android:textSize="28sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:fontFamily="monospace"
+        android:letterSpacing="0.1"
         android:shadowColor="#00FFCC"
         android:shadowDx="0"
         android:shadowDy="0"
-        android:shadowRadius="15"
-        android:layout_marginBottom="5dp"/>
+        android:shadowRadius="10"
+        android:layout_marginBottom="4dp"/>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="> Gelismis Lib / APK Analiz Motoru v3.0"
+        android:text="> Reverse Engineering & Analysis Tool"
         android:textColor="#666666"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:fontFamily="monospace"
         android:layout_marginBottom="20dp"/>
 
+    <!-- Dosya Seçme Butonu -->
     <Button
         android:id="@+id/btn_select_file"
         android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:text="SISTEME DOSYA YUKLE"
+        android:layout_height="50dp"
+        android:text="[ DOSYA SEC VE TARA ]"
         android:textColor="#000000"
         android:textStyle="bold"
         android:fontFamily="monospace"
         android:backgroundTint="#00FFCC"
-        android:layout_marginBottom="20dp"/>
+        android:layout_marginBottom="16dp"/>
 
+    <!-- Durum Metni -->
     <TextView
         android:id="@+id/tv_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="> Durum: Bekleniyor..."
+        android:text="> Sistem Hazir."
         android:textColor="#FFCC00"
         android:fontFamily="monospace"
-        android:textSize="13sp"
-        android:layout_marginBottom="10dp"/>
+        android:textSize="12sp"
+        android:layout_marginBottom="8dp"/>
 
+    <!-- Yükleme Çubuğu -->
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:progressTint="#00FFCC"
+        android:progressBackgroundTint="#222222"
         android:visibility="invisible"
-        android:layout_marginBottom="15dp"/>
+        android:layout_marginBottom="16dp"/>
 
+    <!-- Sonuç Ekranı -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#0F1115"
-        android:padding="12dp">
+        android:background="#0A0A0A"
+        android:padding="10dp"
+        android:foreground="?android:attr/selectableItemBackground">
 
         <ScrollView
             android:layout_width="match_parent"
@@ -74,11 +82,11 @@
                 android:id="@+id/tv_results"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="> Analiz bekleniyor...\n> Lutfen bir .so veya .apk dosyasi secin."
+                android:text="> Analiz icin dosya bekleniyor...\n> Cikti burada gorunecek."
                 android:textColor="#A0A0A0"
                 android:textSize="12sp"
                 android:fontFamily="monospace"
-                android:lineSpacingExtra="4dp"/>
+                android:lineSpacingExtra="3dp"/>
         </ScrollView>
     </FrameLayout>
 </LinearLayout>
