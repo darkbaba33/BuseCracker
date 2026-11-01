@@ -7,21 +7,15 @@ android {
         applicationId "com.buse.cracker"
         minSdk 24
         targetSdk 34
-        versionCode 4
-        versionName "4.0 Pro"
-        multiDexEnabled true
+        versionCode 5
+        versionName "5.0 Ultimate"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
-    packagingOptions {
-        resources {
-            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt']
-        }
-    }
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // Hiçbir dış kütüphane yok. Saf Android.
 }
