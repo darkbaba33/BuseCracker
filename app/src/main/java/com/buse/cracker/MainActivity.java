@@ -13,8 +13,6 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,18 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private String[] keywords = {"auth", "key", "license", "hwid", "verify", "invalid", "t.me", "api.", "expire", "login", "void", "token", "panel"};
     private List<String> urlsFound = new ArrayList<>();
-
-    private final ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Uri uri = result.getData().getData();
-                    if (uri != null) {
-                        analyzeFile(uri);
-                    }
-                }
-            }
-    );
+    private static final int PICK_FILE_REQUEST = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,12 +40,23 @@ public class MainActivity extends AppCompatActivity {
         btnSelect.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
-            filePickerLauncher.launch(intent);
+            startActivityForResult(intent, PICK_FILE_REQUEST);
         });
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_FILE_REQUEST && resultCode == Activity.RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                analyzeFile(uri);
+            }
+        }
+    }
+
     private void analyzeFile(Uri uri) {
-        tvStatus.setText("> Durum: Dosya okunuyor ve bellek taraniyor...");
+        tvStatus.setText("> Durum: Dosya okunuyor...");
         tvResults.setText("");
         urlsFound.clear();
         progressBar.setVisibility(View.VISIBLE);
@@ -67,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 InputStream inputStream = getContentResolver().openInputStream(uri);
                 if (inputStream == null) {
-                    runOnUiThread(() -> Toast.makeText(this, "Dosya acilamadi!", Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "Dosya acilamadi!", Toast.LENGTH_SHORT).show());
                     return;
                 }
                 
@@ -136,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 runOnUiThread(() -> {
-                    tvStatus.setText("> Durum: Analiz Basariyla Tamamlandi!");
+                    tvStatus.setText("> Durum: Analiz Tamamlandi!");
                     progressBar.setVisibility(View.INVISIBLE);
                     tvResults.setText(sb);
                 });
